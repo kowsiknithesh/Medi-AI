@@ -67,6 +67,11 @@ exports.loginDoctor = async (req, res) => {
     // 1. Find the doctor by email
     const doctor = await Doctor.findOne({ email });
 
+    if (!doctor) {
+      console.log('Doctor not found with email:', email);
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
     // 2. If doctor exists, compare the entered password with the hashed password in the DB
     if (doctor && (await bcrypt.compare(password, doctor.password))) {
       // 3. Passwords match, send back doctor info and a new token
@@ -85,3 +90,4 @@ exports.loginDoctor = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
