@@ -78,4 +78,82 @@
 //     </div>
 //   );
 // }
-<h1>Add New Patient</h1>
+
+
+
+
+
+'use client';
+
+import React from 'react';
+
+import { useParams, useRouter } from 'next/navigation';
+ 
+export default function PatientProfilePage() {
+
+  const router = useRouter();
+
+  const params = useParams<{ id: string }>();
+ 
+  const prescriptions = [
+
+    { id: 1, medicine: 'Metformin', dosage: '500mg', time: 'Morning' },
+
+    { id: 2, medicine: 'Amlodipine', dosage: '10mg', time: 'Night' },
+
+  ];
+ 
+  return (
+<div className="min-h-screen bg-gray-50 p-8">
+<button
+
+        onClick={() => router.back()}
+
+        className="mb-4 text-blue-600 hover:underline"
+>
+
+        ← Back
+</button>
+ 
+      <h1 className="text-2xl font-bold mb-6">Patient Profile (ID: {params.id})</h1>
+ 
+      {/* Prescription Table */}
+<div className="bg-white shadow rounded-xl overflow-hidden">
+<table className="w-full border-collapse">
+<thead className="bg-gray-100">
+<tr>
+<th className="p-4 text-left">Medicine</th>
+<th className="p-4 text-left">Dosage</th>
+<th className="p-4 text-left">Time</th>
+</tr>
+</thead>
+<tbody>
+
+            {prescriptions.map((p) => (
+<tr key={p.id} className="border-t">
+<td className="p-4">{p.medicine}</td>
+<td className="p-4">{p.dosage}</td>
+<td className="p-4">{p.time}</td>
+</tr>
+
+            ))}
+</tbody>
+</table>
+</div>
+ 
+      <button
+
+        onClick={() => router.push(`/patients/${params.id}/add-prescription`)}
+
+        className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+>
+
+        Add Prescription
+</button>
+</div>
+
+  );
+
+}
+
+ 
