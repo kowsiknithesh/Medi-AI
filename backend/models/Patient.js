@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
 const patientSchema = new mongoose.Schema({
+  doctor: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
   name: String,
   age: Number,
   gender: String,
-  phone: String, // WhatsApp number
+  whatsappNumber: String, // WhatsApp number
   prescriptions: [
     {
       text: String,
