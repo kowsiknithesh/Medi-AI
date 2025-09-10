@@ -2,26 +2,34 @@
 
 require('dotenv').config(); // Loads environment variables from .env file
 const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
 
 // --- Basic Setup ---
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // --- Middleware ---
-// This allows your frontend to make requests to this backend
-const cors = require('cors'); 
-app.use(cors());
-
-// This allows the server to accept and parse JSON in request bodies
+app.use(cors()); 
 app.use(express.json());
 
-// --- Basic Test Route ---
-// A simple route to check if the server is running
+// --- MongoDB Connection ---
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ MongoDB connected successfully"))
+.catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// --- Routes ---
 app.get('/', (req, res) => {
   res.send('Hello from the Medicine Reminder API!');
 });
 
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+
 // --- Start the Server ---
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });

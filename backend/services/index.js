@@ -32,4 +32,9 @@ cron.schedule('* * * * *', async () => {
   }
 });
 
+const authRoutes = require('./routes/authRoutes');
+
+// Use auth routes
+app.use('/api/auth', authRoutes);
+
 // ... (app.listen)

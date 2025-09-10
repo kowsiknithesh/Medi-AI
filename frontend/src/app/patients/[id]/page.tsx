@@ -1,38 +1,80 @@
 // 'use client';
 
-// import { useParams, useRouter } from 'next/navigation';
-// import { useEffect, useState } from 'react';
-// import { api } from '@/utils/api';
-// import { Patient } from '@/types';
+// import { useState } from 'react';
+// import axios from 'axios';
+// import { useRouter } from 'next/navigation';
 
-// export default function PatientDetailPage() {
-//   const params = useParams();
+// export default function AddPatientPage() {
+//   const [name, setName] = useState('');
+//   const [age, setAge] = useState<number | ''>('');
+//   const [whatsappNumber, setWhatsappNumber] = useState('');
+//   const [loading, setLoading] = useState(false);
 //   const router = useRouter();
-//   const [patient, setPatient] = useState<Patient | null>(null);
-//   const [loading, setLoading] = useState(true);
 
-//   useEffect(() => {
-//     const fetchPatient = async () => {
-//       try {
-//         const response = await api.get(`/patients/${params.id}`);
-//         setPatient(response.data);
-//       } catch (error) {
-//         console.error('Failed to fetch patient:', error);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     setLoading(true);
 
-//     fetchPatient();
-//   }, [params.id]);
+//     try {
+//       const token = localStorage.getItem('authToken'); // JWT from login
+//       await axios.post(
+//         `${process.env.NEXT_PUBLIC_API_URL}/patients`,
+//         { name, age, whatsappNumber },
+//         { headers: { Authorization: `Bearer ${token}` } }
+//       );
 
-//   if (loading) return <div>Loading...</div>;
-//   if (!patient) return <div>Patient not found</div>;
+//       // After adding patient, redirect to dashboard
+//       router.push('/dashboard');
+//     } catch (error) {
+//       console.error('Error adding patient:', error);
+//       alert('Failed to add patient. Please try again.');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
 //   return (
-//     <div className="max-w-4xl mx-auto">
-//       <h1 className="text-2xl font-bold">Patient Details</h1>
-//       {/* Patient details display */}
+//     <div className="container mx-auto p-8 max-w-lg">
+//       <h1 className="text-3xl font-bold text-gray-800 mb-6">Add New Patient</h1>
+//       <form onSubmit={handleSubmit} className="space-y-4">
+//         <div>
+//           <label className="block text-gray-700">Name</label>
+//           <input
+//             type="text"
+//             value={name}
+//             onChange={(e) => setName(e.target.value)}
+//             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+//             required
+//           />
+//         </div>
+//         <div>
+//           <label className="block text-gray-700">Age</label>
+//           <input
+//             type="number"
+//             value={age}
+//             onChange={(e) => setAge(Number(e.target.value))}
+//             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+//           />
+//         </div>
+//         <div>
+//           <label className="block text-gray-700">WhatsApp Number</label>
+//           <input
+//             type="text"
+//             value={whatsappNumber}
+//             onChange={(e) => setWhatsappNumber(e.target.value)}
+//             placeholder="whatsapp:+919876543210"
+//             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+//             required
+//           />
+//         </div>
+//         <button
+//           type="submit"
+//           disabled={loading}
+//           className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+//         >
+//           {loading ? 'Adding...' : 'Add Patient'}
+//         </button>
+//       </form>
 //     </div>
 //   );
 // }
@@ -40,212 +82,78 @@
 
 
 
+
 'use client';
 
+import React from 'react';
+
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Edit, Calendar, Phone, Mail, MapPin } from 'lucide-react';
-import { api } from '../../../utils/api';
-import { Patient, Prescription } from '../../../types';
+ 
+export default function PatientProfilePage() {
 
-export default function PatientDetailPage() {
-  const params = useParams();
   const router = useRouter();
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [patientRes, prescriptionsRes] = await Promise.all([
-          api.get(`/patients/${params.id}`),
-          api.get(`/prescriptions/patient/${params.id}`)
-        ]);
-        setPatient(patientRes.data);
-        setPrescriptions(prescriptionsRes.data);
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const params = useParams<{ id: string }>();
+ 
+  const prescriptions = [
 
-    fetchData();
-  }, [params.id]);
+    { id: 1, medicine: 'Metformin', dosage: '500mg', time: 'Morning' },
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+    { id: 2, medicine: 'Amlodipine', dosage: '10mg', time: 'Night' },
 
-  if (!patient) {
-    return (
-      <div className="text-center py-12">
-        <h1 className="text-2xl font-bold text-gray-900">Patient not found</h1>
-        <Link href="/patients" className="text-primary-600 hover:text-primary-700">
-          Back to Patients
-        </Link>
-      </div>
-    );
-  }
-
+  ];
+ 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 rounded-lg hover:bg-gray-100"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{patient.name}</h1>
-            <p className="text-gray-600">Patient Profile</p>
-          </div>
-        </div>
-        <Link
-          href={`/patients/${params.id}/edit`}
-          className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
-        >
-          <Edit className="h-4 w-4 mr-2" />
-          Edit Profile
-        </Link>
-      </div>
+<div className="min-h-screen bg-gray-50 p-8">
+<button
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Patient Info */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold mb-4">Contact Information</h2>
-            
-            <div className="space-y-3">
-              <div className="flex items-center">
-                <Phone className="h-4 w-4 text-gray-400 mr-3" />
-                <span className="text-gray-700">{patient.whatsappNumber}</span>
-              </div>
-              
-              {patient.email && (
-                <div className="flex items-center">
-                  <Mail className="h-4 w-4 text-gray-400 mr-3" />
-                  <span className="text-gray-700">{patient.email}</span>
-                </div>
-              )}
-              
-              {patient.address && (
-                <div className="flex items-center">
-                  <MapPin className="h-4 w-4 text-gray-400 mr-3" />
-                  <span className="text-gray-700">{patient.address}</span>
-                </div>
-              )}
-            </div>
+        onClick={() => router.back()}
 
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Basic Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Age</p>
-                  <p className="text-sm font-medium">{patient.age} years</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Gender</p>
-                  <p className="text-sm font-medium">{patient.gender}</p>
-                </div>
-              </div>
-            </div>
+        className="mb-4 text-blue-600 hover:underline"
+>
 
-            {patient.emergencyContact && (
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <h3 className="text-sm font-medium text-gray-900 mb-2">Emergency Contact</h3>
-                <p className="text-sm font-medium">{patient.emergencyContact.name}</p>
-                <p className="text-sm text-gray-600">{patient.emergencyContact.phone}</p>
-                <p className="text-sm text-gray-500">{patient.emergencyContact.relationship}</p>
-              </div>
-            )}
-          </div>
-        </div>
+        ← Back
+</button>
+ 
+      <h1 className="text-2xl font-bold mb-6">Patient Profile (ID: {params.id})</h1>
+ 
+      {/* Prescription Table */}
+<div className="bg-white shadow rounded-xl overflow-hidden">
+<table className="w-full border-collapse">
+<thead className="bg-gray-100">
+<tr>
+<th className="p-4 text-left">Medicine</th>
+<th className="p-4 text-left">Dosage</th>
+<th className="p-4 text-left">Time</th>
+</tr>
+</thead>
+<tbody>
 
-        {/* Prescriptions */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold">Prescription History</h2>
-              <Link
-                href={`/prescriptions/new?patientId=${params.id}`}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm"
-              >
-                New Prescription
-              </Link>
-            </div>
+            {prescriptions.map((p) => (
+<tr key={p.id} className="border-t">
+<td className="p-4">{p.medicine}</td>
+<td className="p-4">{p.dosage}</td>
+<td className="p-4">{p.time}</td>
+</tr>
 
-            {prescriptions.length === 0 ? (
-              <div className="text-center py-12">
-                <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No prescriptions found</p>
-                <Link
-                  href={`/prescriptions/new?patientId=${params.id}`}
-                  className="text-primary-600 hover:text-primary-700 text-sm"
-                >
-                  Create first prescription
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {prescriptions.map((prescription) => (
-                  <div key={prescription._id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">
-                          {new Date(prescription.prescriptionDate).toLocaleDateString()}
-                        </h3>
-                        {prescription.diagnosis && (
-                          <p className="text-sm text-gray-600">{prescription.diagnosis}</p>
-                        )}
-                      </div>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        prescription.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {prescription.status}
-                      </span>
-                    </div>
-                    
-                    <div className="mt-3">
-                      <h4 className="text-sm font-medium mb-2">Medicines:</h4>
-                      <ul className="space-y-1">
-                        {prescription.medicines.slice(0, 3).map((medicine, index) => (
-                          <li key={index} className="text-sm text-gray-600">
-                            {medicine.name} - {medicine.dosage}
-                          </li>
-                        ))}
-                        {prescription.medicines.length > 3 && (
-                          <li className="text-sm text-gray-500">
-                            +{prescription.medicines.length - 3} more medicines
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                    
-                    <Link
-                      href={`/prescriptions/${prescription._id}`}
-                      className="inline-block mt-3 text-primary-600 hover:text-primary-700 text-sm"
-                    >
-                      View details →
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+            ))}
+</tbody>
+</table>
+</div>
+ 
+      <button
+
+        onClick={() => router.push(`/patients/${params.id}/add-prescription`)}
+
+        className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+>
+
+        Add Prescription
+</button>
+</div>
+
   );
+
 }
+
+ 

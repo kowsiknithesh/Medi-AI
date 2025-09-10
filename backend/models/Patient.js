@@ -1,10 +1,16 @@
 const mongoose = require('mongoose');
 
-const PatientSchema = new mongoose.Schema({
-  doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
-  name: { type: String, required: true },
-  age: { type: Number },
-  whatsappNumber: { type: String, required: true }, // E.g., whatsapp:+919876543210
-}, { timestamps: true });
+const patientSchema = new mongoose.Schema({
+  name: String,
+  age: Number,
+  gender: String,
+  phone: String, // WhatsApp number
+  prescriptions: [
+    {
+      text: String,
+      createdAt: { type: Date, default: Date.now }
+    }
+  ]
+});
 
-module.exports = mongoose.model('Patient', PatientSchema);
+module.exports = mongoose.model('Patient', patientSchema);
