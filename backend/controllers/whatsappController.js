@@ -37,4 +37,4 @@ const sendPrescriptionByPatientId = async (req, res) => {
     res.status(500).json({ message: "Error sending WhatsApp", error: error.message });
   }
 };
-module.exports = { sendPrescriptionByPatientId };
+module.exports = { sendPrescriptionByPatientId ,sendWhatsAppMessage};

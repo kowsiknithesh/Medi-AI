@@ -1,59 +1,42 @@
-const fs = require('fs');
-const pdfParse = require('pdf-parse');
-const Patient = require('../models/Patient');
-const axios = require('axios');
+const fs = require("fs");
+const pdfParse = require("pdf-parse");
+const { fromPath } = require("pdf2pic");
+const { createWorker } = require("tesseract.js");
+const Patient = require("../models/Patient"); // adjust path to your model
+const { sendWhatsAppMessage } = require("../controllers/whatsappController"); // adjust path
 
-const token = process.env.WHATSAPP_TOKEN;
-const phoneId = process.env.WHATSAPP_PHONE_ID;
+// Utility to clean text
+function cleanText(text) {
+  return text.replace(/\s+/g, " ").trim();
+}
 
-// WhatsApp sender
-const sendWhatsAppMessage = async (number, message) => {
-  const sanitizedNumber = '+' + number.replace(/[^0-9]/g, ''); // only digits
-  await axios.post(
-    `https://graph.facebook.com/v17.0/${phoneId}/messages`,
-    {
-      messaging_product: "whatsapp",
-      to: sanitizedNumber,
-      text: { body: message },
-    },
-    {
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-    }
-  );
-};
-
-// Helper: clean PDF text
-const cleanText = (text) => text.replace(/\r?\n|\r/g, ' ').trim();
-
-// OCR fallback: extract text from images
-const runOcrOnPdf = async (pdfPath) => {
+// OCR fallback for PDFs
+async function runOcrOnPdf(pdfPath) {
   const options = {
-    density: 200,
-    saveFilename: 'temp',
-    savePath: './uploads',
-    format: 'png',
+    density: 300,
+    saveFilename: "ocr_temp",
+    savePath: "./temp",
+    format: "png",
     width: 1200,
     height: 1600,
   };
 
   const convert = fromPath(pdfPath, options);
-  let ocrText = '';
 
-  // Convert first 3 pages (to avoid performance issues on big PDFs)
-  for (let page = 1; page <= 3; page++) {
-    try {
-      const result = await convert(page);
-      const { data: { text } } = await Tesseract.recognize(result.path, 'eng');
-      ocrText += ' ' + text;
-    } catch (err) {
-      console.error(`OCR failed on page ${page}:`, err.message);
-    }
-  }
+  // Convert first page (can loop for all pages if needed)
+  const page = await convert(1);
 
-  return cleanText(ocrText);
-};
+  // Run OCR on the image
+  const worker = await createWorker("eng");
+  const {
+    data: { text },
+  } = await worker.recognize(page.path);
 
-// Main function
+  await worker.terminate();
+
+  return cleanText(text);
+}
+
 const scanSaveAndSendPrescription = async (req, res) => {
   try {
     const { patientId } = req.body;
@@ -67,11 +50,11 @@ const scanSaveAndSendPrescription = async (req, res) => {
     const pdfPath = req.file.path;
     const pdfBuffer = fs.readFileSync(pdfPath);
 
-    let text = '';
+    let text = "";
     try {
       // Try parsing normally
       const data = await pdfParse(pdfBuffer);
-      text = cleanText(data.text || '');
+      text = cleanText(data.text || "");
     } catch (err) {
       console.warn("PDF parse failed, switching to OCR:", err.message);
     }
@@ -81,11 +64,13 @@ const scanSaveAndSendPrescription = async (req, res) => {
       text = await runOcrOnPdf(pdfPath);
     }
 
-    // Remove temp file
+    // Remove temp PDF
     fs.unlinkSync(pdfPath);
 
     if (!text) {
-      return res.status(400).json({ message: "Could not extract text from PDF (file may be corrupted or empty)." });
+      return res.status(400).json({
+        message: "Could not extract text from PDF (file may be corrupted or empty).",
+      });
     }
 
     // Save prescription under patient
@@ -104,7 +89,6 @@ const scanSaveAndSendPrescription = async (req, res) => {
       patientId: patient._id,
       prescriptionText: text,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
