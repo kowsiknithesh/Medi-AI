@@ -1,57 +1,53 @@
-// backend/controllers/prescriptionController.js
-const Prescription = require('../models/Prescription');
-const Reminder = require('../models/Reminder');
 const Patient = require('../models/Patient');
 
-exports.createPrescription = async (req, res) => {
-  try {
-    const { patientId, medicines, startDate } = req.body;
-    const doctorId = req.user.id; // From authMiddleware
 
+exports.addPrescriptions = async (req, res) => {
+  const patientId = req.params.id;
+  const { prescription } = req.body;
+
+  try {
     const patient = await Patient.findById(patientId);
     if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+      return res.status(404).json({ message: "Patient not found" });
     }
 
-    const newPrescription = new Prescription({
-      patient: patientId,
-      doctor: doctorId,
-      medicines,
-      startDate: new Date(startDate),
+    prescription.forEach(p => {
+      patient.prescriptions.push({
+        medicine: p.medicine,
+        dosage: p.dosage,
+        expiry_date: p.expiry_date,
+        status: p.status
+      });
     });
 
-    await newPrescription.save();
+    await patient.save();
 
-    // --- Core Reminder Scheduling Logic ---
-    const reminders = [];
-    const start = new Date(startDate);
-
-    medicines.forEach(med => {
-      for (let day = 0; day < med.duration; day++) {
-        med.times.forEach(time => {
-          const [hour, minute] = time.split(':');
-          const sendAt = new Date(start);
-          sendAt.setDate(start.getDate() + day);
-          sendAt.setHours(hour, minute, 0, 0);
-
-          reminders.push({
-            patient: patientId,
-            medicineName: med.name,
-            dosage: med.dosage,
-            medicineImage: med.image,
-            sendAt: sendAt,
-            patientWhatsappNumber: patient.whatsappNumber,
-          });
-        });
-      }
+    res.json({
+      message: "Prescriptions saved successfully",
+      patientId: patient._id,
+      prescriptions: patient.prescriptions
     });
-
-    if (reminders.length > 0) {
-      await Reminder.insertMany(reminders);
-    }
-    
-    res.status(201).json(newPrescription);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+exports.getPrescriptions = async (req, res) => {
+  const patientId = req.params.id;
+
+  try {
+    const patient = await Patient.findById(patientId).select('name prescriptions');
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
+    }
+
+    res.json({
+      patientId: patient._id,
+      name: patient.name,
+      prescriptions: patient.prescriptions  // 👈 includes all fields
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
   }
 };

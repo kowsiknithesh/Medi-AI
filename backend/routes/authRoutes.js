@@ -5,8 +5,9 @@ const router = express.Router();
 // Controllers
 const { registerDoctor, loginDoctor } = require('../controllers/authController');
 const { createPatient, getPatients } = require('../controllers/patientController');
-const { scanSaveAndSendPrescription } = require('../controllers/pdfController');
+const { scanAndSavePrescription } = require('../controllers/pdfController');
 const { sendPrescriptionByPatientId } = require('../controllers/whatsappController');
+const prescriptionController = require('../controllers/prescriptionController');
 
 // Middleware
 const { protect } = require('../middleware/authMiddleware');
@@ -21,13 +22,15 @@ router.post('/patients', protect, createPatient);
 router.get('/patients', protect, getPatients);
 
 // --- Prescription (PDF Upload + OCR) ---
-router.post('/scan', protect, upload.single('file'), scanSaveAndSendPrescription);
+router.post('/scan', protect, upload.single('pdf'), scanAndSavePrescription);
 
 // --- WhatsApp Prescription Sender ---
 router.post('/send', protect, sendPrescriptionByPatientId);
 
 console.log("protect:", typeof protect);  // should print 'function'
 console.log("sendPrescriptionByPatientId:", typeof sendPrescriptionByPatientId); // should print 'function'
+router.get('/prescriptions/:id', protect, prescriptionController.getPrescriptions);
 
-
+// POST /api/prescriptions/:id
+router.post('/prescriptions/:id', protect, prescriptionController.addPrescriptions);
 module.exports = router;
