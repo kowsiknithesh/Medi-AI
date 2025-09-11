@@ -63,7 +63,7 @@ export default function AddPrescriptionPage() {
 
       const formDataUpload = new FormData();
       formDataUpload.append('patientId', params.id);
-       formDataUpload.append('pdf', pdfFile);
+      formDataUpload.append('file', pdfFile);
 
       const response = await axios.post(
         'http://localhost:5000/api/auth/scan',
