@@ -1,26 +1,19 @@
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 
-const MedicineSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  dosage: { type: String, required: true }, // E.g., "1 tablet", "10 ml"
-  frequency: {
-    type: [String], // E.g., ["Morning", "Afternoon", "Night"]
-    required: true,
-  },
-  times: { // Exact times for reminders
-      type: [String], // E.g., ["08:00", "13:00", "20:00"]
-      required: true,
-  },
-  duration: { type: Number, required: true }, // in days
-  image: { type: String }, // URL to medicine image
-});
+// const EmbeddedPrescriptionSchema = new mongoose.Schema({
+//   medicine: { type: String, required: true },
+//   dosage: { type: String, required: true },
+//   expiry_date: { type: Date, required: true },
+//   status: { type: String, default: "Active" }
+// }, { _id: true }); // keep _id so each prescription has its own id
 
-const PrescriptionSchema = new mongoose.Schema({
-  patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-  doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
-  medicines: [MedicineSchema],
-  startDate: { type: Date, default: Date.now },
-  prescriptionFile: { type: String }, // URL to the uploaded PDF/image
-}, { timestamps: true });
+// const patientSchema = new mongoose.Schema({
+//   doctor: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
+//   name: String,
+//   age: Number,
+//   gender: String,
+//   whatsappNumber: String,
+//   prescriptions: [EmbeddedPrescriptionSchema]   // 👈 store inside patient
+// });
 
-module.exports = mongoose.model('Prescription', PrescriptionSchema);
+// module.exports = mongoose.model('Patient', patientSchema);
