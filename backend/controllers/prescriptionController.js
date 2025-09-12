@@ -38,7 +38,7 @@ function parseExpiryDate(expiry) {
 }
 
 // Schedule daily WhatsApp reminder until expiry
-function scheduleDailyReminder(patient, prescription, reminderDate) {
+function scheduleDailyReminder(patient, prescription, reminderDate , imageUrl) {
   const expiry = reminderDate; // Last day to send reminder
   const hours = reminderDate.getHours();
   const minutes = reminderDate.getMinutes();
@@ -54,7 +54,7 @@ function scheduleDailyReminder(patient, prescription, reminderDate) {
       try {
         console.log(`Sending daily WhatsApp reminder to ${patient.whatsappNumber} for ${prescription.medicine}`);
         const message = `💊 Reminder: Take your medicine *${prescription.medicine}*\nDosage: ${prescription.dosage}\nTime: ${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}`;
-        await sendWhatsAppMessage(patient.whatsappNumber, message);
+        await sendWhatsAppMessage(patient.whatsappNumber, prescription,imageUrl);
       } catch (err) {
         console.error(`Error sending WhatsApp reminder for ${prescription.medicine}:`, err.message);
       }
@@ -121,7 +121,7 @@ exports.addPrescriptions = async (req, res) => {
       // Schedule daily WhatsApp reminder
       if (reminderDate && reminderDate.getTime() > Date.now()) {
         console.log(`Scheduling daily WhatsApp reminders for ${p.medicine} until ${reminderDate}`);
-        scheduleDailyReminder(patient, p, reminderDate);
+        scheduleDailyReminder(patient, p, reminderDate , imageUrl);
       }
     }
 
