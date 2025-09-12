@@ -1,30 +1,52 @@
 const axios = require("axios");
 
-const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN; // Meta API access token
-const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID; // Phone number ID from Meta
-
-// ✅ Send message via WhatsApp Cloud API
-async function sendWhatsAppMessage(to, message) {
+async function sendWhatsAppMessage(to, prescription,imageUrl) {
   try {
-    const url = `https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`;
+    const accessToken = process.env.WHATSAPP_TOKEN; // your Meta Cloud API token
+    const phoneNumberId = process.env.WHATSAPP_PHONE_ID; // your business number ID
 
-    const payload = {
+    const messageData = {
       messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body: message },
+      to: to,
+      type: "template",
+      template: {
+        name: "medical", // your approved template name
+        language: { code: "en" },
+        components: [
+          {
+            type: "header",
+            parameters: [
+              {
+                type: "image",
+                image: { link: `${process.env.BASE_URL}${imageUrl}` }
+              }
+            ]
+          },
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: prescription.medicine
+              }
+            ]
+          }
+        ]
+      }
     };
 
-    const response = await axios.post(url, payload, {
-      headers: {
-        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    });
+    console.log("Sending WhatsApp message:", messageData, `${process.env.BASE_URL}${imageUrl}`);
 
-    console.log("📨 WhatsApp Message Sent:", response.data);
-  } catch (error) {
-    console.error("❌ WhatsApp Error:", error.response?.data || error.message);
+    const response = await axios.post(
+      `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+      messageData,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    console.log("WhatsApp reminder sent:", prescription.medicine, response.data);
+    return response.data;
+  } catch (err) {
+    console.error("Error sending WhatsApp message:", err.response?.data || err.message);
   }
 }
 
