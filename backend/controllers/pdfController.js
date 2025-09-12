@@ -87,20 +87,19 @@ Rules:
     {
       "medicine": "string",
       "dosage": "string",
-      "expiry_date": "string", 
+      "expiry_date": "YYYY-MM-DD , hh:mm a", 
       "status": "Active"
     }
   ]
 }
 
 2. For expiry_date:
-   - If the prescription specifies a date with time → use it directly.
-   - If only date + meal is given (like "till 14-09-2025 after breakfast"):
-        • after breakfast → use "2025-09-14 , 11:00 am"
-        • after lunch → use "2025-09-14 , 1:00 pm"
-        • after dinner / night / before sleep → use "2025-09-14 , 8:00 pm"
-
-3. Always ensure expiry_date includes both date and time in the string.
+   - If prescription has a date → include it.
+   - If it has meal/time words but no clock time, map as:
+        • after breakfast → 08:00 am
+        • after lunch → 01:00 pm
+        • after dinner / night / before sleep → 08:00 pm
+   - Always return expiry_date as: YYYY-MM-DD , hh:mm a (example: "2025-09-14 , 08:00 am").
 
 Prescription text:
 """${rawText}"""
@@ -119,6 +118,7 @@ Prescription text:
     return null;
   }
 }
+
 
 
 // --- Main Flow ---
@@ -158,6 +158,7 @@ const scanAndSavePrescription = async (req, res) => {
     }
 
     // AI extraction step
+    console.log("Extracting prescription details...", text);
     const extractedData = await extractPrescriptionDetails(text);
     if (!extractedData) {
       return res.status(400).json({ message: "AI could not extract prescription details" });
@@ -167,7 +168,7 @@ const scanAndSavePrescription = async (req, res) => {
     const cleanedPrescriptions = extractedData.prescription.map((p) => ({
       medicine: p.medicine,
       dosage: p.dosage,
-      expiry_date: normalizeDate(p.expiry_date),
+      expiry_date: p.expiry_date,
       status: p.status,
     }));
 

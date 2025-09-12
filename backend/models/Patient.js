@@ -4,7 +4,8 @@ const EmbeddedPrescriptionSchema = new mongoose.Schema({
   medicine: { type: String, required: true },
   dosage: { type: String, required: true },
   expiry_date: { type: String },
-  status: { type: String, default: "Active" }
+  status: { type: String, default: "Active" },
+  image: { type: String }
 }, { _id: true }); // keep _id so each prescription has its own id
 
 const patientSchema = new mongoose.Schema({
