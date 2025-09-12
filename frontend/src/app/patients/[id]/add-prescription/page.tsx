@@ -1,13 +1,13 @@
 'use client';
-
+ 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
-
+ 
 export default function AddPrescriptionPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-
+ 
   const [mode, setMode] = useState<'manual' | 'pdf'>('manual');
   const [formData, setFormData] = useState({
     medicine: '',
@@ -15,10 +15,10 @@ export default function AddPrescriptionPage() {
     time: '',
   });
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-
+ 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+ 
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -26,7 +26,7 @@ export default function AddPrescriptionPage() {
         router.push('/login');
         return;
       }
-
+ 
       // 🚀 send manual prescription (you might need a separate API)
       const response = await axios.post(
         'http://localhost:5000/api/auth/prescriptions',
@@ -36,7 +36,7 @@ export default function AddPrescriptionPage() {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+ 
       console.log('✅ Prescription saved:', response.data);
       router.push(`/patients/${params.id}`);
     } catch (error: any) {
@@ -44,45 +44,98 @@ export default function AddPrescriptionPage() {
       alert(error.response?.data?.message || 'Failed to save prescription');
     }
   };
+ 
+//  const handlePdfSubmit = async (e: React.FormEvent) => {
+//   e.preventDefault();
 
-  const handlePdfSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+//   if (!pdfFile) {
+//     alert('Please upload a PDF file');
+//     return;
+//   }
 
-    if (!pdfFile) {
-      alert('Please upload a PDF file');
+//   try {
+//     const token = localStorage.getItem('authToken');
+//     if (!token) {
+//       alert('You must be logged in');
+//       router.push('/login');
+//       return;
+//     }
+
+//     const formDataUpload = new FormData();
+//     formDataUpload.append('patientId', params.id);
+//     formDataUpload.append('pdf', pdfFile);
+
+//     const response = await axios.post(
+//       'http://localhost:5000/api/auth/scan',
+//       formDataUpload,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           'Content-Type': 'multipart/form-data',
+//         },
+//       }
+//     );
+
+//     console.log('✅ PDF uploaded & scanned:', response.data);
+
+//     // ✅ Check if data is present
+//     const scanned = response.data?.prescription;
+//     if (Array.isArray(scanned) && scanned.length > 0) {
+//       router.push(
+//         `/patients/${params.id}/preview
+//          preview?data=${encodeURIComponent(
+//           JSON.stringify(scanned)
+//         )}`
+//       );
+//     } else {
+//       alert('No prescription data found in the uploaded PDF.');
+//     }
+//   } catch (error: any) {
+//     console.error('❌ Failed to upload PDF', error);
+//     alert(error.response?.data?.message || 'Failed to upload prescription');
+//   }
+// };
+
+ const handlePdfSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!pdfFile) {
+    alert('Please upload a PDF file');
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      alert('You must be logged in');
+      router.push('/login');
       return;
     }
 
-    try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        alert('You must be logged in');
-        router.push('/login');
-        return;
+    const formDataUpload = new FormData();
+    formDataUpload.append('patientId', params.id);
+    formDataUpload.append('pdf', pdfFile);
+
+    const response = await axios.post(
+      'http://localhost:5000/api/auth/scan',
+      formDataUpload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
       }
+    );
 
-      const formDataUpload = new FormData();
-      formDataUpload.append('patientId', params.id);
-      formDataUpload.append('file', pdfFile);
+    const encoded = encodeURIComponent(
+      JSON.stringify(response.data.prescription)
+    );
 
-      const response = await axios.post(
-        'http://localhost:5000/api/auth/scan',
-        formDataUpload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      console.log('✅ PDF uploaded & scanned:', response.data);
-      router.push(`/patients/${params.id}`);
-    } catch (error: any) {
-      console.error('❌ Failed to upload PDF', error);
-      alert(error.response?.data?.message || 'Failed to upload prescription');
-    }
-  };
+    router.push(`/patients/${params.id}/preview?data=${encoded}`);
+  } catch (error: any) {
+    console.error('❌ Failed to upload PDF', error);
+    alert(error.response?.data?.message || 'Failed to upload prescription');
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -92,11 +145,11 @@ export default function AddPrescriptionPage() {
       >
         ← Back
       </button>
-
+ 
       <h1 className="text-2xl font-bold mb-6">
         Add Prescription for Patient {params.id}
       </h1>
-
+ 
       {/* Mode Toggle */}
       <div className="flex gap-4 mb-6">
         <button
@@ -122,7 +175,7 @@ export default function AddPrescriptionPage() {
           📄 Upload PDF
         </button>
       </div>
-
+ 
       {/* Manual Form */}
       {mode === 'manual' && (
         <form
@@ -170,7 +223,7 @@ export default function AddPrescriptionPage() {
           </button>
         </form>
       )}
-
+ 
       {/* PDF Upload Form */}
       {mode === 'pdf' && (
         <form
@@ -195,3 +248,5 @@ export default function AddPrescriptionPage() {
     </div>
   );
 }
+ 
+ 
