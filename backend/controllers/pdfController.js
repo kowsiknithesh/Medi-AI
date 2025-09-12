@@ -5,6 +5,8 @@ const path = require("path");
 const { createWorker } = require("tesseract.js");
 const Patient = require("../models/Patient");
 const OpenAI = require("openai");
+const cron = require("node-cron");
+const { sendWhatsAppMessage } = require("../services/whatsappService");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -72,22 +74,33 @@ async function runOcrOnPdf(pdfPath) {
 }
 
 // --- AI Extraction Function ---
+// --- AI Extraction Function ---
 async function extractPrescriptionDetails(rawText) {
   const prompt = `
 You are a medical prescription parser.
 Extract structured data from the following text.
-Return JSON with an array of medicines:
 
+Rules:
+1. Always return JSON in this format:
 {
   "prescription": [
     {
       "medicine": "string",
       "dosage": "string",
-      "expiry_date": "string",
-      "status": "string"
+      "expiry_date": "string", 
+      "status": "Active"
     }
   ]
 }
+
+2. For expiry_date:
+   - If the prescription specifies a date with time → use it directly.
+   - If only date + meal is given (like "till 14-09-2025 after breakfast"):
+        • after breakfast → use "2025-09-14 , 11:00 am"
+        • after lunch → use "2025-09-14 , 1:00 pm"
+        • after dinner / night / before sleep → use "2025-09-14 , 8:00 pm"
+
+3. Always ensure expiry_date includes both date and time in the string.
 
 Prescription text:
 """${rawText}"""
@@ -106,6 +119,7 @@ Prescription text:
     return null;
   }
 }
+
 
 // --- Main Flow ---
 const scanAndSavePrescription = async (req, res) => {
@@ -157,11 +171,35 @@ const scanAndSavePrescription = async (req, res) => {
       status: p.status,
     }));
 
-    console.log("Cleaned Prescriptions:", cleanedPrescriptions);
+    console.log("Extracted Prescriptions:", cleanedPrescriptions);
+
+
+    
+
+    // extractedData.prescription.forEach((p) => {
+    //   // Format time correctly
+    //   const timeString = p.expiry_date; // e.g., "2025-09-14 , 11:10am"
+    //   const reminderDate = new Date(timeString);
+
+    //   if (isNaN(reminderDate.getTime())) {
+    //     console.warn("⚠️ Invalid date format, skipping schedule:", timeString);
+    //     return;
+    //   }
+
+    //   // Create cron expression
+    //   const cronExpr = `${reminderDate.getMinutes()} ${reminderDate.getHours()} ${reminderDate.getDate()} ${reminderDate.getMonth() + 1} *`;
+
+    //   console.log("⏰ Scheduling:", p.medicine, cronExpr);
+
+    //   cron.schedule(cronExpr, async () => {
+    //     const message = `💊 Reminder: Take your medicine *${p.medicine}* \nDosage: ${p.dosage} \nTime: ${p.expiry_date}`;
+    //     await sendWhatsAppMessage(patient.whatsappNumber, message);
+    //   });
+    // });
 
     // Save structured prescription under patient
-    patient.prescriptions.push(...cleanedPrescriptions);
-    await patient.save();
+    // patient.prescriptions.push(...cleanedPrescriptions);
+    // await patient.save();
 
     res.status(200).json({
       message: "Prescription saved successfully",

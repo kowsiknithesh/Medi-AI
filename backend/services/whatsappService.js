@@ -1,32 +1,31 @@
-// backend/services/whatsappService.js
-const twilio = require('twilio');
+const axios = require("axios");
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const client = twilio(accountSid, authToken);
+const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN; // Meta API access token
+const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID; // Phone number ID from Meta
 
-async function sendWhatsAppReminder(reminder) {
+// ✅ Send message via WhatsApp Cloud API
+async function sendWhatsAppMessage(to, message) {
   try {
-    const messageBody = `Hi! This is your medicine reminder.
-    
-💊 Medicine: *${reminder.medicineName}*
-📝 Dosage: *${reminder.dosage}*
+    const url = `https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`;
 
-Please take your medicine as prescribed. Stay healthy!`;
+    const payload = {
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body: message },
+    };
 
-    await client.messages.create({
-      body: messageBody,
-      from: process.env.TWILIO_WHATSAPP_NUMBER,
-      to: reminder.patientWhatsappNumber,
-      // mediaUrl: reminder.medicineImage // You can include an image URL
+    const response = await axios.post(url, payload, {
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
     });
-    
-    console.log(`Reminder sent to ${reminder.patientWhatsappNumber}`);
-    return { success: true };
+
+    console.log("📨 WhatsApp Message Sent:", response.data);
   } catch (error) {
-    console.error(`Failed to send reminder: ${error.message}`);
-    return { success: false, error };
+    console.error("❌ WhatsApp Error:", error.response?.data || error.message);
   }
 }
 
-module.exports = { sendWhatsAppReminder };
+module.exports = { sendWhatsAppMessage };
