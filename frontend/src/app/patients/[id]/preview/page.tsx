@@ -9,7 +9,7 @@ interface PrescriptionItem {
   dosage: string;
   status?: string;
   expiry_date?: string | null;
-  image?: File | null; // local image
+  image?: File | string | null; // allow File or existing path
 }
 
 export default function PreviewPrescription() {
@@ -19,67 +19,69 @@ export default function PreviewPrescription() {
 
   const [items, setItems] = useState<PrescriptionItem[]>([]);
 
-  // ✅ Load prescription data from query param
+  // Load prescription data from ?data=
   useEffect(() => {
     const raw = searchParams.get('data');
     if (raw) {
       try {
         setItems(JSON.parse(raw));
-      } catch {
-        console.error('Invalid prescription data');
+      } catch (e) {
+        console.error('Invalid prescription data', e);
       }
     }
   }, [searchParams]);
 
-  // ✅ Update a single field
+  // Update any field
   const handleChange = (index: number, field: keyof PrescriptionItem, value: any) => {
     const updated = [...items];
     (updated[index] as any)[field] = value;
     setItems(updated);
   };
 
-  // ✅ Save all prescriptions to backend
+  // Save all prescriptions
   const handleSave = async () => {
-  const token = localStorage.getItem('authToken');
-  if (!token) {
-    alert('Please login');
-    router.push('/login');
-    return;
-  }
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      alert('Please login');
+      router.push('/login');
+      return;
+    }
 
-  const rawId = (params as any).id;
-  const patientId = Array.isArray(rawId) ? rawId[0] : rawId;
+    const rawId = (params as any).id;
+    const patientId = Array.isArray(rawId) ? rawId[0] : rawId;
 
-  // Build JSON payload exactly as backend expects
-  const payload = {
-    prescription: items.map((item) => ({
-      image: item.image instanceof File ? item.image.name : item.image, // or null if no image
-      medicine: item.medicine,
-      dosage: item.dosage,
-      expiry_date: item.expiry_date ?? '',
-      status: item.status ?? 'Active',
-    })),
+    // Build JSON body
+    const payload = {
+      prescription: items.map((item) => ({
+        image:
+          item.image instanceof File
+            ? item.image.name // or upload logic if backend expects file
+            : item.image || '',
+        medicine: item.medicine,
+        dosage: item.dosage,
+        expiry_date: item.expiry_date ?? '',
+        status: item.status ?? 'Active',
+      })),
+    };
+
+    try {
+      await axios.post(
+        `http://localhost:5000/api/auth/prescriptions/${patientId}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      router.push(`/patients/${patientId}`);
+    } catch (error: any) {
+      console.error('❌ Failed to save prescriptions', error);
+      alert(error.response?.data?.message || 'Failed to save prescriptions');
+    }
   };
-
-  try {
-    await axios.post(
-      `http://localhost:5000/api/auth/prescriptions/${patientId}`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    router.push(`/patients/${patientId}`);
-  } catch (error: any) {
-    console.error('❌ Failed to save prescriptions', error);
-    alert(error.response?.data?.message || 'Failed to save prescriptions');
-  }
-};
-
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -89,13 +91,19 @@ export default function PreviewPrescription() {
         {items.map((item, idx) => (
           <div
             key={idx}
-            className="bg-white shadow rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center"
+            className="bg-white shadow rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start"
           >
-            {/* Image Upload */}
+            {/* Image */}
             <div>
-              {item.image ? (
+              {item.image && typeof item.image !== 'string' ? (
                 <img
                   src={URL.createObjectURL(item.image)}
+                  alt="Preview"
+                  className="h-20 w-20 object-cover rounded-md"
+                />
+              ) : item.image && typeof item.image === 'string' ? (
+                <img
+                  src={item.image}
                   alt="Preview"
                   className="h-20 w-20 object-cover rounded-md"
                 />
@@ -114,7 +122,7 @@ export default function PreviewPrescription() {
               />
             </div>
 
-            {/* Editable Fields */}
+            {/* Editable fields */}
             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 value={item.medicine}
@@ -128,6 +136,21 @@ export default function PreviewPrescription() {
                 className="border rounded p-2 w-full"
                 placeholder="Dosage"
               />
+              <input
+                value={item.expiry_date || ''}
+                onChange={(e) => handleChange(idx, 'expiry_date', e.target.value)}
+                className="border rounded p-2 w-full"
+                placeholder="Expiry Date"
+              />
+              <select
+                value={item.status || 'Active'}
+                onChange={(e) => handleChange(idx, 'status', e.target.value)}
+                className="border rounded p-2 w-full"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Completed">Completed</option>
+              </select>
             </div>
           </div>
         ))}
