@@ -7,7 +7,7 @@ exports.createPatient = async (req, res) => {
 
     // Doctor ID will come from the logged-in doctor (via JWT auth middleware)
    
-
+    const doctorId = req.user.id; 
     if (!name || !phone) {
       return res.status(400).json({ message: "Name and WhatsApp number are required." });
     }
