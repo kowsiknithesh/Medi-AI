@@ -63,6 +63,31 @@ function scheduleDailyReminder(patient, prescription, reminderDate) {
 }
 
 // --- Add prescriptions and schedule WhatsApp reminders ---
+async function savePrescriptionImage(imagePathOrUrl, medicineName) {
+  try {
+    const uploadsDir = path.join(__dirname, "../uploads/prescriptions");
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+    const fileName = `${Date.now()}-${medicineName.replace(/\s+/g, "_")}${path.extname(imagePathOrUrl)}`;
+    const destPath = path.join(uploadsDir, fileName);
+
+    if (fs.existsSync(imagePathOrUrl)) {
+      // local file copy
+      fs.copyFileSync(imagePathOrUrl, destPath);
+    } else {
+      // remote download
+      const response = await axios.get(imagePathOrUrl, { responseType: "arraybuffer" });
+      fs.writeFileSync(destPath, response.data);
+    }
+
+    return `/uploads/prescriptions/${fileName}`;
+  } catch (err) {
+    console.error("Error saving image:", err.message);
+    return null;
+  }
+}
+
+// --- Add prescriptions and schedule WhatsApp reminders ---
 exports.addPrescriptions = async (req, res) => {
   const patientId = req.params.id;
   const { prescription } = req.body;
@@ -71,15 +96,22 @@ exports.addPrescriptions = async (req, res) => {
     const patient = await Patient.findById(patientId);
     if (!patient) return res.status(404).json({ message: "Patient not found" });
 
-    prescription.forEach(p => {
+    for (const p of prescription) {
       const reminderDate = parseExpiryDate(p.expiry_date);
+
+      // save image locally and get URL
+      let imageUrl = null;
+      if (p.image) {
+        imageUrl = await savePrescriptionImage(p.image, p.medicine);
+      }
 
       // Save prescription to DB
       const savedPrescription = {
         medicine: p.medicine,
         dosage: p.dosage,
         expiry_date: reminderDate,
-        status: p.status
+        status: p.status,
+        image: imageUrl
       };
       patient.prescriptions.push(savedPrescription);
 
@@ -88,7 +120,7 @@ exports.addPrescriptions = async (req, res) => {
         console.log(`Scheduling daily WhatsApp reminders for ${p.medicine} until ${reminderDate}`);
         scheduleDailyReminder(patient, p, reminderDate);
       }
-    });
+    }
 
     await patient.save();
 
