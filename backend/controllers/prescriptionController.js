@@ -1,6 +1,9 @@
 const Patient = require('../models/Patient');
 const { sendWhatsAppMessage } = require('../services/whatsappService');
 const schedule = require('node-schedule');
+const fs = require("fs");
+const path = require("path");   // <-- this was missing
+const axios = require("axios");
 
 // Utility: parse expiry_date with default times
 function parseExpiryDate(expiry) {
